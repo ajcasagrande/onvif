@@ -54,6 +54,10 @@ func GetAvailableDevicesAtSpecificEthernetInterface(interfaceName string) []onvi
 		for _, xaddr := range endpoints {
 			xaddr := strings.Split(strings.Split(xaddr.Text(), " ")[0], "/")[2]
 			fmt.Printf("Onvif WS-Discovery: Find %s \n", xaddr)
+
+			endpointRefAddr := doc.Root().FindElement("./Body/ProbeMatches/ProbeMatch/EndpointReference/Address")
+			fmt.Printf("   endpointRefAddr: %s\n", endpointRefAddr.Text())
+
 			c := 0
 
 			for c = 0; c < len(nvtDevices); c++ {

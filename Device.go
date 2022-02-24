@@ -6,6 +6,7 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"github.com/IOTechSystems/onvif/xsd"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -89,11 +90,12 @@ type Device struct {
 }
 
 type DeviceParams struct {
-	Xaddr      string
-	Username   string
-	Password   string
-	HttpClient *http.Client
-	AuthMode   string
+	Xaddr              string
+	Username           string
+	Password           string
+	HttpClient         *http.Client
+	AuthMode           string
+	EndpointRefAddress xsd.AnyURI
 }
 
 //GetServices return available endpoints
@@ -101,7 +103,7 @@ func (dev *Device) GetServices() map[string]string {
 	return dev.endpoints
 }
 
-//GetServices return available endpoints
+//GetDeviceInfo return available endpoints
 func (dev *Device) GetDeviceInfo() DeviceInfo {
 	return dev.info
 }

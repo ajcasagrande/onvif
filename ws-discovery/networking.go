@@ -12,6 +12,7 @@ package wsdiscovery
 import (
 	"errors"
 	"fmt"
+	"github.com/IOTechSystems/onvif/xsd"
 	"log"
 	"net"
 	"os"
@@ -40,44 +41,48 @@ func GetAvailableDevicesAtSpecificEthernetInterface(interfaceName string) []onvi
 	if strings.TrimSpace(interfaceName) == "" {
 		interfaceName = defaultInterfaceName
 	}
+
 	devices := SendProbe(interfaceName, nil, nil, map[string]string{"dn": "http://www.onvif.org/ver10/network/wsdl"})
 	nvtDevices := make([]onvif.Device, 0)
+	xaddrSet := make(map[string]struct{}, 0)
 
 	for _, j := range devices {
 		doc := etree.NewDocument()
 		if err := doc.ReadFromString(j); err != nil {
-			fmt.Errorf("%s", err.Error())
+			fmt.Printf("%s", err.Error())
 			return nil
 		}
 
-		endpoints := doc.Root().FindElements("./Body/ProbeMatches/ProbeMatch/XAddrs")
-		for _, xaddr := range endpoints {
-			xaddr := strings.Split(strings.Split(xaddr.Text(), " ")[0], "/")[2]
-			fmt.Printf("Onvif WS-Discovery: Find %s \n", xaddr)
+		probeMatches := doc.Root().FindElements("./Body/ProbeMatches/ProbeMatch")
+		for _, probeMatch := range probeMatches {
+			xaddrs := probeMatch.FindElements("./XAddrs")
 
-			endpointRefAddr := doc.Root().FindElement("./Body/ProbeMatches/ProbeMatch/EndpointReference/Address")
-			fmt.Printf("   endpointRefAddr: %s\n", endpointRefAddr.Text())
+			var endpointRefAddress xsd.AnyURI
+			if ref := probeMatch.FindElement("./EndpointReference/Address"); ref != nil {
+				endpointRefAddress = xsd.AnyURI(ref.Text())
+			}
 
-			c := 0
+			for _, xaddr := range xaddrs {
+				xaddr := strings.Split(strings.Split(xaddr.Text(), " ")[0], "/")[2]
+				fmt.Printf("Onvif WS-Discovery: Find %s :: %s \n", xaddr, endpointRefAddress)
 
-			for c = 0; c < len(nvtDevices); c++ {
-				if nvtDevices[c].GetDeviceParams().Xaddr == xaddr {
-					fmt.Println(nvtDevices[c].GetDeviceParams().Xaddr, "==", xaddr)
-					break
+				if _, dupe := xaddrSet[xaddr]; dupe {
+					fmt.Printf("Skipping duplicate XAddr: %s\n", xaddr)
+					continue
 				}
-			}
 
-			if c < len(nvtDevices) {
-				continue
-			}
+				dev, err := onvif.NewDevice(onvif.DeviceParams{
+					Xaddr:              strings.Split(xaddr, " ")[0],
+					EndpointRefAddress: endpointRefAddress,
+				})
 
-			dev, err := onvif.NewDevice(onvif.DeviceParams{Xaddr: strings.Split(xaddr, " ")[0]})
+				if err != nil {
+					fmt.Println("Error", xaddr)
+					fmt.Println(err)
+					continue
+				}
 
-			if err != nil {
-				fmt.Println("Error", xaddr)
-				fmt.Println(err)
-				continue
-			} else {
+				xaddrSet[xaddr] = struct{}{}
 				nvtDevices = append(nvtDevices, *dev)
 			}
 		}

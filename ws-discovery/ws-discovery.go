@@ -7,8 +7,27 @@ import (
 	"github.com/beevik/etree"
 )
 
+// BuildProbeMessage generates a SOAP ws-discovery Probe message
+//
+// Example Message:
+//<?xml version="1.0" encoding="UTF-8"?>
+//<Envelope xmlns="http://www.w3.org/2003/05/soap-envelope" xmlns:a="http://schemas.xmlsoap.org/ws/2004/08/addressing">
+//  <Header>
+//    <a:Action mustUnderstand="1">http://schemas.xmlsoap.org/ws/2005/04/discovery/Probe</a:Action>
+//    <a:MessageID>uuid:78a2ed98-bc1f-4b08-9668-094fcba81e35</a:MessageID>
+//    <a:ReplyTo>
+//      <a:Address>http://schemas.xmlsoap.org/ws/2004/08/addressing/role/anonymous</a:Address>
+//    </a:ReplyTo>
+//    <a:To mustUnderstand="1">urn:schemas-xmlsoap-org:ws:2005:04:discovery</a:To>
+//  </Header>
+//  <Body>
+//    <Probe xmlns="http://schemas.xmlsoap.org/ws/2005/04/discovery">
+//      <d:Types xmlns:d="http://schemas.xmlsoap.org/ws/2005/04/discovery" xmlns:dp0="http://www.onvif.org/ver10/network/wsdl">dp0:NetworkVideoTransmitter</d:Types>
+//    </Probe>
+//  </Body>
+//</Envelope>
 func BuildProbeMessage(uuidV4 string, scopes, types []string, nmsp map[string]string) gosoap.SoapMessage {
-	//Список namespace
+	// Namespace List
 	namespaces := make(map[string]string)
 	namespaces["a"] = "http://schemas.xmlsoap.org/ws/2004/08/addressing"
 	//namespaces["d"] = "http://schemas.xmlsoap.org/ws/2005/04/discovery"
@@ -22,7 +41,7 @@ func BuildProbeMessage(uuidV4 string, scopes, types []string, nmsp map[string]st
 
 	//fmt.Println(probeMessage.String())
 
-	//Содержимое Head
+	// Header Content
 	var headerContent []*etree.Element
 
 	action := etree.NewElement("a:Action")
@@ -42,7 +61,7 @@ func BuildProbeMessage(uuidV4 string, scopes, types []string, nmsp map[string]st
 	headerContent = append(headerContent, action, msgID, replyTo, to)
 	probeMessage.AddHeaderContents(headerContent)
 
-	//Содержимое Body
+	// Body Content
 	probe := etree.NewElement("Probe")
 	probe.CreateAttr("xmlns", "http://schemas.xmlsoap.org/ws/2005/04/discovery")
 
